@@ -31,7 +31,7 @@ from schema import (
     ActionType,
     IOCType,
 )
-from world_gen import TASK_EASY, TASK_MEDIUM, TASK_HARD, VALID_TASKS, generate_world
+from worldGen import TASK_EASY, TASK_MEDIUM, TASK_HARD, VALID_TASKS, generate_world
 from env import ShadowRegisterEnv
 
 

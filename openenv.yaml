@@ -1,0 +1,198 @@
+openenv_version: "1.0"
+
+# ── Identity ────────────────────────────────────────────────────────────────
+name: shadow_register
+display_name: "SHADOW_REGISTER: A Post-Mortem Benchmark"
+version: "0.1.0"
+description: >
+  A deterministic forensic investigation benchmark. The agent acts as a
+  Forensic Analyst reconstructing a Kill Chain from raw server artifacts.
+  Evaluated on multi-step relational reasoning, metadata literacy, and
+  resistance to adversarial deception (honeypots / timestomping).
+domain: cybersecurity
+tags: [dfir, forensics, reasoning, multi-step, deception]
+
+# ── Runtime ─────────────────────────────────────────────────────────────────
+runtime:
+  image: shadow-register:latest
+  port: 8000
+  healthcheck: /ping
+  startup_timeout_seconds: 30
+
+# ── Tasks ───────────────────────────────────────────────────────────────────
+tasks:
+  - id: noisy_entry
+    display_name: "The Noisy Entry"
+    difficulty: easy
+    description: >
+      A textbook SSH brute-force attack against a public-facing service.
+      Identify the attacker's source IP and the exact successful-login
+      timestamp from auth.log. Budget: 50 actions.
+    max_steps: 50
+    reward_range: [0.0, 1.0]
+    success_threshold: 0.8
+
+  - id: stealthy_persistence
+    display_name: "The Stealthy Persistence"
+    difficulty: medium
+    description: >
+      A hidden cron job planted under www-data executes a base64-encoded
+      beacon to a remote C2. Locate the malicious crontab entry, decode
+      the payload, and identify the C2 destination IP.
+    max_steps: 50
+    reward_range: [0.0, 1.0]
+    success_threshold: 0.8
+
+  - id: timestomp_proxy
+    display_name: "The Timestomp Proxy"
+    difficulty: hard
+    description: >
+      A trojanized system binary with a forged mtime. The attacker used
+      touch -t to backdate the modification time, but ctime reveals the
+      true injection window. Identify the tampered binary, extract the
+      embedded C2 IP, and prove metadata tampering via the mtime/ctime
+      discrepancy.
+    max_steps: 50
+    reward_range: [0.0, 1.0]
+    success_threshold: 0.8
+
+# ── Observation Space ───────────────────────────────────────────────────────
+observation_space:
+  type: object
+  schema: ForensicObs
+  fields:
+    current_view:
+      type: string
+      max_length: 1000
+      description: "Current terminal output window (1000-char slice)."
+    working_directory:
+      type: string
+      description: "Current filesystem location."
+    artifact_metadata:
+      type: object
+      nullable: true
+      description: "stat(1)-style metadata after an Inspect action."
+      fields:
+        mtime: { type: string, format: "ISO 8601" }
+        atime: { type: string, format: "ISO 8601" }
+        ctime: { type: string, format: "ISO 8601" }
+        size:  { type: integer }
+        uid:   { type: integer }
+        gid:   { type: integer }
+        permissions: { type: string }
+    tagged_evidence:
+      type: object
+      description: "Key-value pairs the agent has formally recorded."
+    remaining_budget:
+      type: integer
+      minimum: 0
+      maximum: 50
+      description: "Actions remaining before episode termination."
+    last_action_log:
+      type: string
+      description: "Human-readable result of the previous action."
+
+# ── Action Space ─────────────────────────────────────────────────────────────
+action_space:
+  type: object
+  schema: ForensicAction
+  actions:
+    Search:
+      description: "Global keyword search. Returns filenames + hit counts only."
+      fields:
+        query: { type: string, required: true }
+
+    Inspect:
+      description: "Retrieve full stat metadata for a path (for timestomp detection)."
+      fields:
+        path: { type: string, required: true }
+
+    Read:
+      description: "Read a 1000-char window of a file at a given byte offset."
+      fields:
+        path:   { type: string,  required: true }
+        offset: { type: integer, required: false, default: 0 }
+
+    Tag:
+      description: "Formally record a piece of evidence (label=value)."
+      fields:
+        label: { type: string, required: true }
+        value: { type: string, required: true }
+
+    SubmitCase:
+      description: "File the final case report. Terminates the episode."
+      fields:
+        pivots:
+          type: array
+          required: true
+          items:
+            schema: ForensicPivot
+            fields:
+              artifact: { type: string }
+              ioc:      { type: string }
+              type:     { type: string, enum: [NETWORK_IP, EVENT_TIMESTAMP, PATH_TO_FILE, COMMAND_STRING, USER_ACCOUNT, FILE_HASH] }
+              reason:   { type: string }
+
+# ── Reward ───────────────────────────────────────────────────────────────────
+reward:
+  range: [0.0, 1.0]
+  components:
+    - name: evidence_milestone
+      value: +0.20
+      trigger: "First Read of a critical-path artifact."
+    - name: analytical_cost
+      value: -0.05
+      trigger: "Every action (discourages brute-force reading)."
+    - name: honeypot_penalty
+      value: -0.40
+      trigger: "Tagging an artifact marked is_honeypot=True."
+    - name: resolution_bonus
+      value: +1.00
+      trigger: "SubmitCase with correct ForensicPivots matching TruthDAG."
+    - name: efficiency_bonus
+      value: +0.10
+      trigger: "SubmitCase with ≥ 40% budget remaining."
+
+# ── Reproducibility ──────────────────────────────────────────────────────────
+reproducibility:
+  seed_param: seed
+  determinism: strict
+  variance_tolerance: 0.0
+  verified_iterations: 100
+
+# ── Environment Variables ────────────────────────────────────────────────────
+environment_variables:
+  API_BASE_URL:
+    description: "Base URL for the LLM API endpoint."
+    required: true
+  MODEL_NAME:
+    description: "Model identifier for inference (e.g. gpt-4o, claude-sonnet-4-20250514)."
+    required: true
+  HF_TOKEN:
+    description: "Hugging Face API token."
+    required: true
+
+# ── Endpoints ─────────────────────────────────────────────────────────────────
+endpoints:
+  ping:
+    path: /ping
+    method: GET
+    description: "Health check. Returns 200 + {status: ok}."
+  reset:
+    path: /reset
+    method: POST
+    body:
+      task: { type: string, required: true }
+      seed: { type: integer, required: false, default: 42 }
+    returns: StepResult
+  step:
+    path: /step
+    method: POST
+    body:
+      action: ForensicAction
+    returns: StepResult
+  state:
+    path: /state
+    method: GET
+    description: "Returns full InternalState including TruthDAG. Grader use only."
+    returns: InternalState

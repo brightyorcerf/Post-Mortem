@@ -63,7 +63,7 @@ Rewards are calculated per step() to provide a dense signal.
 - Budgeting: Add a note: "Every action consumes 1 unit of the Forensic Budget (Max: 50). Episode terminates at 0.
 
 ## Technical Implementation
-### Procedural World Generator (world_gen.py)
+### Procedural World Generator (worldGen.py)
 
 To ensure reproducibility and 0-leakage, the environment state is generated at reset().
 The DAG: A Directed Acyclic Graph defines the "Kill Chain" (Entry → Persistence → Exfiltration).
@@ -78,7 +78,7 @@ State: The state() method returns the internal Ground Truth DAG. This is strictl
 
 ### Reproducibility & Stability
 
-- Deterministic Seeds: Mention that world_gen.py uses a strictly isolated numpy.random.RandomState.
+- Deterministic Seeds: Mention that worldGen.py uses a strictly isolated numpy.random.RandomState.
 - Evaluation Script: evaluateStability.py is included. It verifies that across 100 iterations of a fixed seed, the score variance is σ=0.
 
 ## Why This Wins
