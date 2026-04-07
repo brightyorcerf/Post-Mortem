@@ -1,5 +1,5 @@
 """
-world_gen.py  —  SHADOW_REGISTER Procedural World Generator
+worldGen.py  —  SHADOW_REGISTER Procedural World Generator
 ============================================================
 Senior DFIR Specialist's "Physics Engine"
 
