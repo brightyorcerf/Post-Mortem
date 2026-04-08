@@ -154,9 +154,9 @@ The attacker planted a malicious crontab entry under `www-data` (not `root`, a d
 
 ### 3.3 · `timestomp_proxy` — The Timestomp Proxy (Hard)
 
-> **Scenario:** A malicious insider trojaned `/usr/bin/login` and forged its modification timestamp to hide the intrusion window. A malicious insider trojaned /usr/bin/login and forged its modification timestamp.
+> **Scenario:** A malicious insider trojaned `/usr/bin/login` and forged its modification timestamp to hide the intrusion window.
 
-An insider with root access replaced the system `login` binary with a backdoored version that beacons to a C2 on every successful authentication. To mask the modification, they ran `touch -t <original_compile_date> /usr/bin/login`, forging the `mtime` back to the original package era (2019–2022). However, the **`ctime` (inode-change time) cannot be forged** without low-level filesystem manipulation — and they didn't do that. The temporal discrepancy between `mtime` and `ctime` is the smoking gun. Additionally, the file's on-disk size is **12–40 KB larger** than the size recorded in `/var/log/dpkg.log` at install time — a secondary corroborating signal.
+An insider with root access replaced the system login binary with a backdoored version that beacons to a C2 on every successful authentication. To mask the modification, they ran touch -t <original_compile_date> /usr/bin/login, forging the mtime back to the original package era (2019–2022). However, the ctime (inode-change time) cannot be forged without low-level filesystem manipulation. The temporal discrepancy between mtime and ctime is the smoking gun. Additionally, the file's on-disk size is 12–40 KB larger than the size recorded in /var/log/dpkg.log at install time.
 
 **Kill Chain nodes:**
 
@@ -172,7 +172,7 @@ An insider with root access replaced the system `login` binary with a backdoored
 - **`HONEY_1`**: `/usr/bin/sudo`: has a slightly stale `mtime`, but `mtime == ctime`, meaning it's genuinely old, not tampered.
 - **`HONEY_2`**: `/var/log/fw.log`: contains a **different** external IP (UFW firewall block log) that is *not* the C2. Agents that surface any external IP without validating its context get penalised.
 
-**What makes it "Hard":** This task requires metadata literacy; the agent must detect a mtime vs ctime discrepancy and cross-reference file sizes against dpkg.log to identify the intrusion.
+**What makes it "Hard":** This task requires metadata literacy (a capability beyond text comprehension). The agent must recognize that mtime and ctime should be correlated, identify the impossible temporal state of the binary, and cross-reference on-disk file sizes against historical package records in dpkg.log.
 
 ---
 
@@ -280,7 +280,7 @@ python3 tests/testSpec.py
 
 ---
 
-## 7 · Preliminary Baseline Performance
+## 6 · Preliminary Baseline Performance
 
 The following results represent zero-shot performance using a ReAct-style prompting strategy. All evaluations were conducted at `temperature=0` to minimize variance, though model-side non-determinism remains.
 
@@ -295,7 +295,7 @@ The significant performance decay in `timestomp_proxy` highlights a specific "re
 
 ---
 
-## 6 · Architecture Overview
+## 7 · Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
