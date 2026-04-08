@@ -186,7 +186,7 @@ def read_root():
         "documentation": "https://huggingface.co/spaces/brightyorcerf/post-mortem/blob/main/README.md",
         "message": "Forensics Lab Environment Active."
     }
-    return JSONResponse(content=content, indent=4)
+    return JSONResponse(content=content)
 
 
 # ---------------------------------------------------------------------------
