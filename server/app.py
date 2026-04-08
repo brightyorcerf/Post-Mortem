@@ -19,7 +19,7 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -102,15 +102,18 @@ def ping() -> JSONResponse:
 
 
 @app.post("/reset")
-def reset(req: ResetRequest) -> JSONResponse:
+def reset(req: Optional[ResetRequest] = Body(default=None)) -> JSONResponse:
     """
     Start a fresh episode.
 
-    Body
+    Body (optional — defaults to noisy_entry with seed=42)
     ----
         task : one of "noisy_entry" | "stealthy_persistence" | "timestomp_proxy"
         seed : integer seed for deterministic world generation (default 42)
     """
+    if req is None:
+        req = ResetRequest()
+
     if req.task not in VALID_TASKS:
         raise HTTPException(
             status_code=422,
