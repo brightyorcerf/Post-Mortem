@@ -364,15 +364,17 @@ def main(task: str, seed: int, max_steps: int) -> None:
 # CLI
 # ---------------------------------------------------------------------------
 
+ALL_TASKS = ["noisy_entry", "stealthy_persistence", "timestomp_proxy"]
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="SHADOW_REGISTER baseline inference script"
     )
     parser.add_argument(
         "--task",
-        default="noisy_entry",
-        choices=["noisy_entry", "stealthy_persistence", "timestomp_proxy"],
-        help="Which scenario to run (default: noisy_entry)",
+        default="all",
+        choices=["all", "noisy_entry", "stealthy_persistence", "timestomp_proxy"],
+        help="Which scenario to run (default: all — runs every task)",
     )
     parser.add_argument(
         "--seed",
@@ -388,4 +390,10 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    main(task=args.task, seed=args.seed, max_steps=args.max_steps)
+    tasks_to_run = ALL_TASKS if args.task == "all" else [args.task]
+
+    for task_name in tasks_to_run:
+        print(f"\n{'='*60}", flush=True)
+        print(f"  Running task: {task_name}", flush=True)
+        print(f"{'='*60}", flush=True)
+        main(task=task_name, seed=args.seed, max_steps=args.max_steps)
