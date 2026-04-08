@@ -267,7 +267,7 @@ def main(task: str, seed: int, max_steps: int) -> None:
     if not client_env.ping():
         print(
             f"[ERROR] Server not reachable at {SERVER_URL}. "
-            "Start it with: uvicorn server:app --port 8000",
+            "Start it with: python -m server.app",
             file=sys.stderr,
         )
         sys.exit(1)

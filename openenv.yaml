@@ -4,6 +4,8 @@ openenv_version: "1.0"
 name: shadow_register
 display_name: "SHADOW_REGISTER: A Post-Mortem Benchmark"
 version: "0.1.0"
+entry_point: "server.app:main"
+env_type: "docker"
 description: >
   A deterministic forensic investigation benchmark. The agent acts as a
   Forensic Analyst reconstructing a Kill Chain from raw server artifacts.
@@ -13,8 +15,8 @@ domain: cybersecurity
 tags: [dfir, forensics, reasoning, multi-step, deception]
 
 # ── Runtime ─────────────────────────────────────────────────────────────────
-runtime:
-  image: shadow-register:latest
+docker:
+  image: "brightyorcerf/post-mortem"
   port: 7860
   healthcheck: /ping
   startup_timeout_seconds: 30

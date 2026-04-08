@@ -15,7 +15,6 @@ by session_id and pass session_id in each request body.
 """
 
 from __future__ import annotations
-from fastapi.responses import JSONResponse
 
 import os
 from typing import Any, Dict, Optional
@@ -193,11 +192,10 @@ def read_root():
 # Dev entry point
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
+def main():
     import uvicorn
-    uvicorn.run(
-        "server:app",
-        host="0.0.0.0",
-        port=int(os.getenv("PORT", 7860)),
-        reload=False,
-    )
+    port = int(os.getenv("PORT", 7860))
+    uvicorn.run("server.app:app", host="0.0.0.0", port=port, reload=False)
+
+if __name__ == "__main__":
+    main()
