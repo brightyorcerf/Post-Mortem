@@ -15,6 +15,7 @@ by session_id and pass session_id in each request body.
 """
 
 from __future__ import annotations
+from fastapi.responses import JSONResponse
 
 import os
 from typing import Any, Dict, Optional
@@ -171,20 +172,21 @@ def state() -> JSONResponse:
     raw = env.state().model_dump()
     return JSONResponse(raw)
 
-@app.get("/")
+app.get("/")
 def read_root():
-    return {
+    content = {
         "project": "post-mortem",
         "status": "Online",
         "endpoints": {
             "health": "/ping",
             "init": "/reset",
             "action": "/step",
-            "debug": "/state"  
+            "debug": "/state"
         },
         "documentation": "https://huggingface.co/spaces/brightyorcerf/post-mortem/blob/main/README.md",
         "message": "Forensics Lab Environment Active."
     }
+    return JSONResponse(content=content, indent=4)
 
 
 # ---------------------------------------------------------------------------
