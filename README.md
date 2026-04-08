@@ -1,6 +1,14 @@
-# post-mortem
+---
+title: post-mortem
+emoji: 🕵️
+colorFrom: red
+colorTo: black
+sdk: docker
+pinned: false
+---
 
-> A Deterministic Benchmark for Forensic Attribution
+# post-mortem
+A Deterministic Benchmark for Forensic Attribution
 
 > Domain: Cybersecurity / Digital Forensics & Incident Response (DFIR)
 
