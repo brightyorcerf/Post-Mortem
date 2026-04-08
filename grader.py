@@ -183,8 +183,8 @@ def calculate_final_score(
     report = GraderReport(score=0.0)
 
     if not pivots:
-        report.verdict = "No pivots submitted — score 0."
-        return report
+        report.verdict = "No pivots submitted."
+        # Fall through to clamp + epsilon mapping below
 
     # ------------------------------------------------------------------ #
     # 1. Per-node weighted scoring                                         #
@@ -267,7 +267,9 @@ def calculate_final_score(
     # ------------------------------------------------------------------ #
     # 4. Clamp & verdict                                                   #
     # ------------------------------------------------------------------ #
-    report.score = round(max(0.0, min(score, 1.0)), 6)
+    clamped = max(0.0, min(score, 1.0))
+    # Map [0, 1] → (0.01, 0.99) — validator requires strictly (0, 1)
+    report.score = round(clamped * 0.98 + 0.01, 6)
 
     matched_count = len(matched_ids)
     total_truth   = sum(1 for n in truth.nodes.values() if not n.is_honeypot)

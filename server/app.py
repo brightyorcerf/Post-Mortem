@@ -146,8 +146,8 @@ def step(req: StepRequest) -> JSONResponse:
     result = env.step(req.action)
     payload = _serialise_result(result)
 
-    # When the episode ends via SubmitCase, attach the grader report
-    if result.done and env.last_pivots:
+    # Always attach grader report when episode ends (validator requires it)
+    if result.done:
         report = calculate_final_score(
             pivots=env.last_pivots,
             truth=env.state().truth_dag,
