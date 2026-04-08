@@ -7,8 +7,6 @@ sdk: docker
 pinned: false
 ---
 
-<div align="center">
-
 # post-mortem
 
 > A Deterministic Benchmark for Autonomous Forensic Attribution
