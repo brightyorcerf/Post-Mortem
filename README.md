@@ -7,21 +7,24 @@ sdk: docker
 pinned: false
 ---
 
-# post-mortem
+<div align="center">
+  <h1> post-mortem </h1>
+  <p><i>A Deterministic Benchmark for Autonomous Forensic Attribution</i></p>
+  <img src="https://img.shields.io/badge/OpenEnv-v1.0-blue?style=flat-square" />
+  <img src="https://img.shields.io/badge/Status-Compliant-success?style=flat-square" />
+</div>
 
-> A Deterministic Benchmark for Autonomous Forensic Attribution
+---
 
 ## 1 · Environment Description & Motivation
 
 ### The Problem:
 
-Raw logs don't lie, but they are designed to be ignored. "post-mortem" challenges agents to move beyond simple keyword searching and perform deep metadata analysis to uncover 'living-off-the-land' (LotL) techniques that bypass traditional security layers
-
+Raw logs don't lie, but they are designed to be ignored. 
 If autonomous agents can be trained to perform forensic attribution (identifying *who* attacked, *how* they persisted, and *what* they exfiltrated), the economics of incident response fundamentally change. Significantly.
 
-### The Solution:
-
-post-mortem is a deterministic, OpenEnv-compliant sandbox that simulates a forensic analyst's workstation on a compromised Linux server. The agent is dropped into a virtual filesystem populated with:
+### The Solution: 
+post-mortem, a deterministic, OpenEnv-compliant sandbox that simulates a forensic analyst's workstation on a compromised Linux server. The agent is dropped into a virtual filesystem populated with:
 
 - System logs (`auth.log`, `syslog`, `dpkg.log`, `nginx/access.log`) containing realistic benign activity
 - Kill Chain artifacts: injected attack traces following real-world intrusion patterns
@@ -29,20 +32,30 @@ post-mortem is a deterministic, OpenEnv-compliant sandbox that simulates a foren
 
 The environment is a benchmark for relational reasoning under uncertainty. The agent must `Search`, `Read`, `Inspect` metadata, and `Tag` evidence across multiple correlated artifacts before filing a structured `SubmitCase` report consisting of `ForensicPivots` (each binding an artifact path, an Indicator of Compromise (IOC), its classification type, and a causal justification).
 
-> ### The Ground Truth: TruthDAG
->
-> What makes post-mortem unique among cybersecurity environments is its embedded TruthDAG — a Directed Acyclic Graph that encodes the precise Kill Chain executed by the adversary.
->
-> * Nodes: Each node represents a verifiable forensic fact:
->   * `NETWORK_IP` (e.g., C2 callback address)
->   * `EVENT_TIMESTAMP` (e.g., moment of successful brute-force)
->   * `PATH_TO_FILE` (e.g., location of a timestomped binary)
-> * Edges: Edges define causal prerequisite relationships. An agent that identifies a C2 callback IP without first locating the persistence mechanism receives reduced credit due to a broken chain penalty.
->
-> This TruthDAG is never exposed to the agent; it exists solely as a **Deterministic Oracle** for the grader, providing the objective ground truth that real-world forensics often lacks.
+> "post-mortem" challenges agents to move beyond simple keyword searching and perform deep metadata analysis to uncover 'living-off-the-land' (LotL) techniques that bypass traditional security layers.
 
-This TruthDAG is never exposed to the agent. It exists solely for the grader, providing the deterministic oracle that real-world forensics lacks.
+| Feature | post-mortem | Typical CTF Environments |
+|:--------|:---------------|:------------------------|
+| Grading | Weighted DAG with causal chain validation | Binary flag capture |
+| Deception resistance | Active honeypots with penalties | N/A |
+| Metadata reasoning | `stat(1)` timestamps as first-class evidence | Text-only |
+| Partial credit | Per-node weighted scoring (0.0–1.0 continuous) | Pass/fail |
+| Reproducibility | σ=0, seed-deterministic | Often non-deterministic |
+| Anti-forensics | Timestomping, naming mimicry, decoy IPs | Rarely modelled |
 
+---
+
+### The Ground Truth: TruthDAG
+What makes post-mortem unique among cybersecurity environments is its embedded TruthDAG — a Directed Acyclic Graph that encodes the precise Kill Chain executed by the adversary.
+
+Nodes: Each node represents a verifiable forensic fact:
+   * `NETWORK_IP` (e.g., C2 callback address)
+   * `EVENT_TIMESTAMP` (e.g., moment of successful brute-force)
+   * `PATH_TO_FILE` (e.g., location of a timestomped binary)
+   * Edges: define causal prerequisite relationships. An agent that identifies a C2 callback IP without first locating the persistence mechanism receives reduced credit due to a broken chain penalty.
+
+ This TruthDAG is never exposed to the agent; it exists solely as a **Deterministic Oracle** for the grader, providing the objective ground truth that real-world forensics often lacks.
+ 
 ### Determinism: σ=0 Across Runs
 
 All world generation routes through a single `numpy.RandomState` instance seeded at `reset()`. The same `(task, seed)` pair produces a byte-identical virtual filesystem, identical TruthDAG, and identical grader scores - verified across 100 iterations with zero variance. There is no wall-clock dependency, no external randomness. Reproducibility is mathematically guaranteed.
@@ -77,8 +90,6 @@ class ForensicObs(BaseModel):
     remaining_budget:  int                     # Actions left before termination (max: 50)
     last_action_log:   str                     # Human-readable action result
 ```
-
-The `current_view` field acts as the agent's rendered terminal: every Search result, file content window, and error message flows through this 1000-character channel. The agent never sees the raw filesystem; only what its actions surface. `artifact_metadata` populates only after an `Inspect` call, providing the MAC timestamps (`mtime`, `atime`, `ctime`), file size, ownership, and permissions required for temporal analysis.
 
 ### 2.3 · IOC Type Taxonomy
 
@@ -205,7 +216,12 @@ The per-step cost creates an implicit planning pressure: an agent that reads eve
 
 ## 5 · Setup & Usage
 
-### 5.1 · Docker (Recommended)
+### 5.1 Live Environment (Hugging Face Spaces)
+
+The environment is pre-deployed and reachable for remote evaluation:
+URL: [https://huggingface.co/spaces/brightyorcerf/post-mortem](https://huggingface.co/spaces/brightyorcerf/post-mortem)
+
+### 5.1 · Docker
 
 ```bash
 # Build the image
@@ -214,7 +230,6 @@ docker build -t shadow-register:latest .
 # Run the environment server
 docker run -p 7860:7860 shadow-register:latest
 ```
-
 The server starts on port `7860` with a health check at `/ping`.
 
 ### 5.2 · Local Development
@@ -224,7 +239,7 @@ The server starts on port `7860` with a health check at `/ping`.
 pip install -r requirements.txt
 
 # Start the environment server
-python3 server.py
+python3 -m server.app
 # → Uvicorn running on http://0.0.0.0:7860
 ```
 
@@ -237,13 +252,14 @@ export MODEL_NAME="gpt-4o"
 export HF_TOKEN="your-hf-token-here"
 
 # Run a single episode
-python inference.py --task noisy_entry --seed 42
+python3 inference.py --task noisy_entry --seed 42
 
 # Run all three tasks
-python inference.py --task noisy_entry --seed 42
-python inference.py --task stealthy_persistence --seed 42
-python inference.py --task timestomp_proxy --seed 42
+python3 inference.py --task noisy_entry --seed 42
+python3 inference.py --task stealthy_persistence --seed 42
+python3 inference.py --task timestomp_proxy --seed 42
 ```
+
 
 ### 5.4 · OpenEnv Validation
 
@@ -270,44 +286,7 @@ python3 tests/testSpec.py
 
 ---
 
-## 6 · Creativity & Novelty
-
-### 6.1 · The Honeypot Mechanic
-
-Shadow Register doesn't just test whether an agent can *find* evidence — it tests whether the agent can **resist false evidence**. Each scenario includes at least one honeypot: a file that *looks* suspicious (hidden dotfile, leaked credentials, unfamiliar external IP) but is, on closer inspection, legitimate.
-
-- **Easy:** `/tmp/ssh_credentials.txt` — looks like a leaked SSH key backup but contains standard config
-- **Medium:** `/tmp/.cache_clear.sh` — hidden dotfile in `/tmp` with executable permissions, but is a sanctioned Nginx cache helper
-- **Hard:** `/usr/bin/sudo` with stale timestamps (but `mtime == ctime` — genuinely old, not tampered) *and* `/var/log/fw.log` containing a different external IP (firewall block, not C2)
-
-An agent that tags a honeypot receives a **-0.40 penalty** — identical to the weight of many truth nodes. This creates a meaningful cost for false positives and models the real-world DFIR principle: *accusing a legitimate user or process is not merely unhelpful; it actively degrades the investigation.*
-
-### 6.2 · Procedural World Generation
-
-Every `(task, seed)` pair produces a unique investigation. The world generator (`worldGen.py`) procedurally constructs:
-
-- Attacker IPs drawn from realistic ASN abuse pools (Tor exit nodes, VPS blocks, bulletproof hosting, residential proxy ranges)
-- 45+ benign syslog entries from 15 realistic daemon templates
-- 22+ bash history entries from a curated benign admin command set
-- 6+ stale `/tmp` session tokens
-- Full `/etc/passwd` user list, `/var/log/dpkg.log` package history, and `/var/log/nginx/access.log` HTTP traffic
-
-Changing the seed changes *everything*: attacker IPs, failure counts, timestamps, file sizes, noise patterns. The Kill Chain structure remains consistent per task, but the specific IOC values are unique. This prevents agents from memorising answers and forces generalisation across the forensic methodology.
-
-### 6.3 · What Makes This Different
-
-| Feature | Shadow Register | Typical CTF Environments |
-|:--------|:---------------|:------------------------|
-| **Grading** | Weighted DAG with causal chain validation | Binary flag capture |
-| **Deception resistance** | Active honeypots with penalties | N/A |
-| **Metadata reasoning** | `stat(1)` timestamps as first-class evidence | Text-only |
-| **Partial credit** | Per-node weighted scoring (0.0–1.0 continuous) | Pass/fail |
-| **Reproducibility** | σ=0, seed-deterministic | Often non-deterministic |
-| **Anti-forensics** | Timestomping, naming mimicry, decoy IPs | Rarely modelled |
-
----
-
-## 7 · Architecture Overview
+## 6 · Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -342,19 +321,6 @@ Changing the seed changes *everything*: attacker IPs, failure counts, timestamps
 │ σ=0 Seeded   │         │  TruthDAG    │
 └──────────────┘         └──────────────┘
 ```
-
----
-
-## 9 · Technical Constraints
-
-| Constraint | Value | Rationale |
-|:-----------|:------|:----------|
-| **Max memory** | < 100 MB | Virtual filesystem is string-based; no binary blobs |
-| **Compute** | 2 vCPU sufficient | Search uses `re.compile` + `findall`; no embeddings or ML in the loop |
-| **World generation** | < 1 second | Pure numpy RNG + string formatting |
-| **Max steps** | 50 (budget) / 40 (inference default) | 10-action safety margin for the agent |
-| **Container** | Python 3.11-slim | No torch/tensorflow/sklearn dependencies |
-| **Workers** | 1 | Single-agent evaluation; no concurrency needed |
 
 ---
 
