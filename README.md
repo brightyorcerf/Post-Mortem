@@ -125,7 +125,7 @@ An external attacker hammers the SSH daemon with **47–120 rapid-fire password 
 
 **DAG edges:** `A → B` (IP identification is a prerequisite for pinpointing the success timestamp)
 
-**Honeypot:** `/tmp/ssh_credentials.txt` — a file designed to look like a leaked SSH key backup. Tagging it triggers **-0.40 penalty**. It's bait: the file contains legitimate config and no attacker IOCs.
+**Honeypot:** `/tmp/ssh_credentials.txt`: a file designed to look like a leaked SSH key backup. Tagging it triggers **-0.40 penalty**. It's bait: the file contains legitimate config and no attacker IOCs.
 
 **What makes it "Easy":** The signal-to-noise ratio is high. The brute-force cluster is unmistakable in `auth.log`, and both IOCs come from a single file. A competent agent can solve this in under 10 actions.
 
@@ -135,7 +135,7 @@ An external attacker hammers the SSH daemon with **47–120 rapid-fire password 
 
 > **Scenario:** A hidden cron job disguised as a PHP session-cleanup routine, beaconing to a remote C2.
 
-The attacker planted a malicious crontab entry under `www-data` (not `root` — a deliberate evasion of searches in `/var/spool/cron/crontabs/root`). The cron entry calls a hidden launcher at `/var/www/.config/.update_check`, whose name mimics a legitimate package manager health check. Inside, a base64-encoded payload decodes to a `curl` beacon to a remote C2 server.
+The attacker planted a malicious crontab entry under `www-data` (not `root`, a deliberate evasion of searches in `/var/spool/cron/crontabs/root`). The cron entry calls a hidden launcher at `/var/www/.config/.update_check`, whose name mimics a legitimate package manager health check. Inside, a base64-encoded payload decodes to a `curl` beacon to a remote C2 server.
 
 **Kill Chain nodes:**
 
@@ -147,7 +147,7 @@ The attacker planted a malicious crontab entry under `www-data` (not `root` — 
 
 **DAG edges:** `A → B → C` (the agent must follow the crontab → launcher → payload chain in order)
 
-**Honeypot:** `/tmp/.cache_clear.sh` — a world-readable shell script with a suspicious hidden dotfile prefix in `/tmp`. It's actually a legitimate Nginx cache cleanup script authored by the ops team. The agent must resist the urge to flag anything with a dotfile prefix in `/tmp`.
+**Honeypot:** `/tmp/.cache_clear.sh`: a world-readable shell script with a suspicious hidden dotfile prefix in `/tmp`. It's actually a legitimate Nginx cache cleanup script authored by the ops team. The agent must resist the urge to flag anything with a dotfile prefix in `/tmp`.
 
 **What makes it "Medium":** Multi-hop reasoning is required. The agent must traverse three artifacts, decode base64, and resist a plausible-looking honeypot. Keyword-only agents fail because terms like "cron," "curl," and "cache" appear in both malicious and benign contexts throughout the noise layer.
 
@@ -170,12 +170,12 @@ An insider with root access replaced the system `login` binary with a backdoored
 **DAG edges:** `A → B → C` (identification → extraction → temporal proof)
 
 **Decoys (×2):**
-- **`HONEY_1`**: `/usr/bin/sudo` — has a slightly stale `mtime`, but `mtime == ctime`, meaning it's genuinely old, not tampered.
-- **`HONEY_2`**: `/var/log/fw.log` — contains a **different** external IP (UFW firewall block log) that is *not* the C2. Agents that surface any external IP without validating its context get penalised.
+- **`HONEY_1`**: `/usr/bin/sudo`: has a slightly stale `mtime`, but `mtime == ctime`, meaning it's genuinely old, not tampered.
+- **`HONEY_2`**: `/var/log/fw.log`: contains a **different** external IP (UFW firewall block log) that is *not* the C2. Agents that surface any external IP without validating its context get penalised.
 
-**What makes it "Hard":** This task requires *metadata literacy* — a capability beyond text comprehension. The agent must:
+**What makes it "Hard":** This task requires *metadata literacy* (a capability beyond text comprehension). The agent must:
 1. Recognise that `mtime` and `ctime` should be correlated for untampered files
-2. Identify that `/usr/bin/login`'s `mtime` is years before its `ctime` — an impossible condition without deliberate manipulation
+2. Identify that `/usr/bin/login`'s `mtime` is years before its `ctime` (impossible condition without deliberate manipulation)
 3. Cross-reference the file size against `dpkg.log` package records
 4. Distinguish the real C2 IP (in the binary strings dump) from the decoy IP (in the firewall log)
 5. Construct the exact discrepancy proof string
@@ -186,13 +186,13 @@ An insider with root access replaced the system `login` binary with a backdoored
 
 The grader (`grader.py`) is fully deterministic and operates in four phases:
 
-1. **Per-node weighted matching** — Each submitted `ForensicPivot` is compared against TruthDAG nodes using type-aware IOC matching (exact, substring, or path-normalised depending on IOC type). Matched nodes contribute their weight to the raw score.
+1. **Per-node weighted matching**: Each submitted `ForensicPivot` is compared against TruthDAG nodes using type-aware IOC matching (exact, substring, or path-normalised depending on IOC type). Matched nodes contribute their weight to the raw score.
 
-2. **Honeypot penalty** — Any pivot that matches a honeypot node subtracts **-0.40** from the score.
+2. **Honeypot penalty**: Any pivot that matches a honeypot node subtracts **-0.40** from the score.
 
-3. **DAG chain validation** — If the agent matched node B but not its prerequisite A (where `A→B` is a DAG edge), the positive score is multiplied by **0.5x per broken link** (floored at 0.25x). This enforces Kill Chain coherence: random correct guesses are worth less than structured forensic reasoning.
+3. **DAG chain validation**: If the agent matched node B but not its prerequisite A (where `A→B` is a DAG edge), the positive score is multiplied by **0.5x per broken link** (floored at 0.25x). This enforces Kill Chain coherence: random correct guesses are worth less than structured forensic reasoning.
 
-4. **Efficiency bonus** — If the agent retains **≥40% of the budget** (≥20 of 50 actions) at submission time and the score is positive, a **+0.10 bonus** is applied. This rewards analytical precision over brute-force exploration.
+4. **Efficiency bonus**: If the agent retains **≥40% of the budget** (≥20 of 50 actions) at submission time and the score is positive, a **+0.10 bonus** is applied. This rewards analytical precision over brute-force exploration.
 
 The final score is clamped to `[0.0, 1.0]`.
 
